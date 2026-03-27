@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<title>MyPlanner CM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --teal-900:#042F23;--teal-800:#064E3B;--teal-700:#065F46;
+  --teal-600:#047857;--teal-500:#059669;--teal-400:#34D399;
+  --teal-200:#A7F3D0;--teal-100:#D1FAE5;--teal-50:#ECFDF5;
+  --sage-stripe:#DFF0EA;--sage-note:#C8E6DC;
+  --text-dark:#1F2937;--text-mid:#4B5563;--text-light:#9CA3AF;
+  --white:#FFFFFF;--off:#F9FAFB;
+  --border:#E5E7EB;--border2:#D1D5DB;
+  --p1-bg:#FEE2E2;--p1-text:#7F1D1D;
+  --p2-bg:#FEF3C7;--p2-text:#78350F;
+  --p3-bg:#D1FAE5;--p3-text:#065F46;
+  --p4-bg:#F3F4F6;--p4-text:#374151;
+  --done-bg:#D1FAE5;--prog-bg:#FEF9C3;--hold-bg:#FEE2E2;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(4,47,35,.12);
+  --r:8px;--rl:12px;
+}
+
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:14px;color:var(--text-dark);background:#E8F5EF;min-height:100vh;}
+
+/* ── LAYOUT ── */
+#app{display:flex;flex-direction:column;min-height:100vh;}
+
+.topbar{background:var(--teal-900);padding:0 20px;display:flex;
+  align-items:center;justify-content:space-between;height:52px;
+  position:sticky;top:0;z-index:100;box-shadow:var(--shadow-md);}
+.logo{font-size:16px;font-weight:700;color:var(--white);letter-spacing:-.3px;}
+.logo em{color:var(--teal-400);font-style:normal;}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.btn-backup{background:rgba(255,255,255,.1);color:var(--white);border:1px solid rgba(255,255,255,.2);
+  border-radius:var(--r);padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;}
+.btn-backup:hover{background:rgba(255,255,255,.18);}
+.btn-add-task{background:var(--teal-500);color:var(--white);border:none;
+  border-radius:var(--r);padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-add-task:hover{background:var(--teal-600);}
+
+.tabs{background:var(--teal-800);display:flex;padding:0 20px;gap:2px;}
+.tab{padding:11px 16px;color:rgba(255,255,255,.6);border:none;background:none;
+  font-family:inherit;font-size:13px;cursor:pointer;border-bottom:3px solid transparent;
+  font-weight:500;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.tab.active{color:var(--white);border-bottom-color:var(--teal-400);}
+.tab:hover:not(.active){color:rgba(255,255,255,.85);}
+.tab-cnt{background:var(--teal-400);color:var(--teal-900);font-size:10px;
+  font-weight:700;border-radius:99px;padding:1px 6px;min-width:16px;text-align:center;}
+
+.main{flex:1;padding:20px;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* ── STATS BAR ── */
+.stats-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--r);
+  padding:8px 16px;font-size:12px;color:var(--text-mid);display:flex;align-items:center;gap:6px;}
+.stat strong{color:var(--text-dark);font-size:18px;font-weight:700;display:block;line-height:1;}
+.stat-label{font-size:11px;color:var(--text-light);}
+.stat.urgent{border-color:#FCA5A5;background:#FFF5F5;}
+.stat.urgent strong{color:var(--p1-text);}
+
+/* ── FILTERS ── */
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.filter-chip{padding:5px 12px;border:1px solid var(--border2);border-radius:99px;
+  font-size:12px;color:var(--text-mid);cursor:pointer;background:var(--white);font-family:inherit;}
+.filter-chip.active{background:var(--teal-700);color:var(--white);border-color:var(--teal-700);}
+.filter-chip:hover:not(.active){background:var(--sage-stripe);}
+.sort-sel{margin-left:auto;font-family:inherit;font-size:12px;padding:5px 10px;
+  border:1px solid var(--border);border-radius:var(--r);background:var(--white);color:var(--text-mid);cursor:pointer;}
+
+/* ── TASK LIST ── */
+.task-list{display:flex;flex-direction:column;gap:0;}
+
+.task-block{border-radius:var(--rl);overflow:hidden;border:1px solid var(--border);
+  margin-bottom:8px;background:var(--white);transition:box-shadow .15s;}
+.task-block:hover{box-shadow:var(--shadow-md);}
+.task-block.done{opacity:.45;}
+
+.task-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--white);}
+.task-block:nth-child(even) .task-row{background:var(--sage-stripe);}
+.task-block.done .task-name{text-decoration:line-through;color:var(--text-light);}
+
+.task-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--teal-500);
+  flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;background:var(--white);}
+.task-check:hover{background:var(--teal-50);border-color:var(--teal-600);}
+.task-check.checked{background:var(--teal-500);border-color:var(--teal-500);}
+.task-check.checked::after{content:'✓';color:white;font-size:11px;font-weight:700;}
+
+.task-body{flex:1;min-width:0;}
+.task-name{font-size:13px;font-weight:600;color:var(--text-dark);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.task-tags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;align-items:center;}
+
+.tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap;}
+.tag-p1{background:var(--p1-bg);color:var(--p1-text);}
+.tag-p2{background:var(--p2-bg);color:var(--p2-text);}
+.tag-p3{background:var(--p3-bg);color:var(--p3-text);}
+.tag-p4{background:var(--p4-bg);color:var(--p4-text);}
+.tag-proj{background:var(--teal-100);color:var(--teal-800);font-weight:500;}
+.tag-due{background:#FEF3C7;color:#92400E;}
+.tag-due.overdue{background:var(--p1-bg);color:var(--p1-text);}
+.tag-due.today{background:#FEF9C3;color:#78350F;}
+.tag-status{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;}
+.tag-status.pending{background:#F3F4F6;color:#6B7280;}
+.tag-status.inprogress{background:var(--prog-bg);color:#92400E;}
+.tag-status.done{background:var(--done-bg);color:var(--teal-700);}
+.tag-status.onhold{background:var(--hold-bg);color:var(--p1-text);}
+
+.task-actions{display:flex;gap:4px;flex-shrink:0;}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text-light);
+  padding:4px 6px;border-radius:var(--r);font-size:13px;}
+.icon-btn:hover{background:var(--sage-stripe);color:var(--text-dark);}
+.icon-btn.del:hover{background:var(--p1-bg);color:var(--p1-text);}
+
+.notes-row{padding:5px 14px 8px 44px;font-size:12px;color:var(--text-mid);
+  font-style:italic;background:var(--sage-note);border-top:1px solid var(--border);}
+.task-block:nth-child(even) .notes-row{background:#D4EAE2;}
+.notes-prefix{color:var(--teal-500);font-weight:600;font-style:normal;margin-right:4px;}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-light);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+
+/* ── QUICK ADD ── */
+.quick-add{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.quick-add input,.quick-add select{font-family:inherit;font-size:13px;
+  padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r);
+  background:var(--white);color:var(--text-dark);outline:none;}
+.quick-add input{flex:1;min-width:200px;}
+.quick-add input:focus,.quick-add select:focus{border-color:var(--teal-500);}
+.btn-primary{background:var(--teal-600);color:var(--white);border:none;
+  border-radius:var(--r);padding:9px 16px;font-family:inherit;font-size:13px;
+  font-weight:600;cursor:pointer;}
+.btn-primary:hover{background:var(--teal-700);}
+.btn-secondary{background:var(--white);color:var(--text-dark);
+  border:1px solid var(--border2);border-radius:var(--r);padding:8px 14px;
+  font-family:inherit;font-size:13px;cursor:pointer;}
+.btn-secondary:hover{background:var(--sage-stripe);}
+
+/* ── MODAL ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;}
+.modal{background:var(--white);border-radius:var(--rl);padding:24px;
+  width:min(480px,100%);box-shadow:0 20px 40px rgba(0,0,0,.15);
+  display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:16px;font-weight:700;color:var(--teal-900);}
+.close-btn{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-light);padding:2px 6px;}
+.form-row{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.4px;}
+.form-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-row input,.form-row select,.form-row textarea{font-family:inherit;font-size:13px;
+  padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r);
+  background:var(--white);color:var(--text-dark);outline:none;width:100%;}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--teal-500);}
+.form-row textarea{resize:vertical;min-height:72px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
+
+/* ── PROJECT SECTIONS ── */
+.proj-section{margin-bottom:24px;border-radius:var(--rl);overflow:hidden;
+  border:1px solid var(--border);background:var(--white);}
+.proj-header{padding:13px 16px;display:flex;align-items:center;
+  justify-content:space-between;cursor:pointer;}
+.proj-header-left{display:flex;align-items:center;gap:10px;}
+.proj-title{font-size:14px;font-weight:700;color:var(--white);}
+.proj-count{font-size:11px;color:rgba(255,255,255,.7);}
+.proj-progress{height:3px;background:rgba(255,255,255,.2);border-radius:2px;flex:1;max-width:100px;}
+.proj-progress-fill{height:100%;border-radius:2px;background:rgba(255,255,255,.8);}
+.proj-body{border-top:1px solid var(--border);}
+.proj-task-row{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;
+  border-bottom:1px solid var(--border);}
+.proj-task-row:last-child{border-bottom:none;}
+.proj-task-row:nth-child(even){background:var(--sage-stripe);}
+.proj-task-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border2);
+  flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.proj-task-check.checked{background:var(--teal-500);border-color:var(--teal-500);}
+.proj-task-check.checked::after{content:'✓';color:white;font-size:9px;font-weight:700;}
+.proj-task-body{flex:1;min-width:0;}
+.proj-task-name{font-size:13px;color:var(--text-dark);font-weight:500;}
+.proj-task-name.done{text-decoration:line-through;color:var(--text-light);}
+.proj-task-notes{font-size:11px;color:var(--text-light);margin-top:2px;font-style:italic;}
+.proj-task-meta{display:flex;gap:5px;margin-top:4px;}
+.proj-task-actions{display:flex;gap:2px;flex-shrink:0;}
+.proj-add-row{padding:10px 16px;border-top:1px solid var(--border);}
+.proj-add-input{display:flex;gap:8px;}
+.proj-add-input input{flex:1;font-family:inherit;font-size:12px;padding:6px 10px;
+  border:1px dashed var(--border2);border-radius:var(--r);background:var(--off);outline:none;}
+.proj-add-input input:focus{border-color:var(--teal-500);background:var(--white);}
+.proj-add-btn{background:var(--teal-600);color:white;border:none;border-radius:var(--r);
+  padding:6px 12px;font-family:inherit;font-size:12px;cursor:pointer;}
+
+/* ── VELOCITY INFO ── */
+.info-section{margin-bottom:20px;}
+.info-section-title{font-size:11px;font-weight:700;color:var(--teal-800);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;
+  align-items:center;justify-content:space-between;}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.info-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);
+  padding:14px;position:relative;transition:border-color .15s;}
+.info-card:hover{border-color:var(--teal-400);}
+.info-card-label{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:#0F766E;margin-bottom:4px;}
+.info-card-name{font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:8px;}
+.info-card-val{font-size:12px;font-family:'Courier New',monospace;color:var(--text-mid);
+  display:flex;align-items:center;gap:6px;}
+.reveal-btn{background:none;border:none;cursor:pointer;color:var(--teal-600);
+  font-size:11px;padding:0;font-family:inherit;text-decoration:underline;}
+.info-card-note{font-size:11px;color:var(--text-light);margin-top:5px;font-style:italic;}
+.info-card-actions{position:absolute;top:8px;right:8px;display:flex;gap:2px;
+  opacity:0;transition:opacity .15s;}
+.info-card:hover .info-card-actions{opacity:1;}
+.info-add-card{background:none;border:1.5px dashed var(--border2);border-radius:var(--rl);
+  padding:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-size:12px;color:var(--text-light);font-family:inherit;transition:all .15s;min-height:80px;}
+.info-add-card:hover{background:var(--sage-stripe);color:var(--teal-700);border-color:var(--teal-400);}
+
+/* UNFI table */
+.unfi-table{width:100%;border-collapse:collapse;font-size:12px;}
+.unfi-table th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;
+  color:var(--white);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(255,255,255,.2);}
+.unfi-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-dark);}
+.unfi-table tr:nth-child(even) td{background:var(--sage-stripe);}
+.unfi-table tr:last-child td{border-bottom:none;}
+.unfi-mgr{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;
+  background:var(--teal-100);color:var(--teal-800);}
+.unfi-pending{color:var(--text-light);font-style:italic;}
+
+/* ESN table */
+.esn-master{background:var(--teal-100);border:1px solid var(--teal-200);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.esn-master-label{font-size:12px;font-weight:700;color:var(--teal-800);}
+.esn-num{font-family:'Courier New',monospace;font-size:13px;font-weight:700;
+  color:var(--teal-700);background:var(--teal-50);padding:3px 10px;border-radius:var(--r);}
+.esn-table{width:100%;border-collapse:collapse;font-size:12px;}
+.esn-table th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;
+  color:var(--white);text-transform:uppercase;letter-spacing:.5px;}
+.esn-table td{padding:9px 12px;border-bottom:1px solid var(--border);}
+.esn-table tr:nth-child(even) td{background:#FFFBEB;}
+.esn-table tr:last-child td{border-bottom:none;}
+.esn-code{font-family:'Courier New',monospace;font-weight:600;color:var(--teal-700);}
+.esn-cm{font-size:11px;padding:2px 8px;border-radius:99px;background:#FEF3C7;color:#78350F;font-weight:500;}
+
+/* Section color bars */
+.sec-teal    th{background:#0F766E;color:#FFFFFF;}
+.sec-amber   th{background:#B45309;color:#FFFFFF;}
+.sec-amber   .esn-master{background:#FEF3C7;border-color:#FDE68A;}
+.sec-amber   .esn-master-label{color:#78350F;}
+
+/* ── NOTIFICATION ── */
+.notif{position:fixed;top:16px;right:16px;background:var(--teal-800);color:var(--white);
+  border-radius:var(--r);padding:10px 16px;font-size:13px;z-index:300;
+  display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-md);
+  animation:slideIn .2s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+
+/* ── INFO MODAL ── */
+#infoModal .form-row{margin-bottom:0;}
+</style>
+</head>
+<style>
+#lockScreen{
+  position:fixed;inset:0;background:#042F23;
+  display:flex;align-items:center;justify-content:center;
+  z-index:9999;flex-direction:column;gap:0;
+}
+.lock-card{
+  background:#FFFFFF;border-radius:16px;padding:40px 36px;
+  width:min(360px,90%);box-shadow:0 20px 60px rgba(0,0,0,.4);
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+}
+.lock-logo{font-size:22px;font-weight:700;color:#042F23;letter-spacing:-.5px;}
+.lock-logo em{color:#059669;font-style:normal;}
+.lock-subtitle{font-size:13px;color:#6B7280;margin-top:-12px;text-align:center;}
+.lock-input-wrap{width:100%;position:relative;}
+.lock-input{
+  width:100%;padding:12px 44px 12px 14px;font-size:15px;font-family:inherit;
+  border:2px solid #E5E7EB;border-radius:10px;outline:none;
+  color:#1F2937;background:#F9FAFB;letter-spacing:2px;
+  transition:border-color .2s;
+}
+.lock-input:focus{border-color:#059669;background:#FFFFFF;}
+.lock-toggle{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:13px;
+  font-family:inherit;padding:2px 4px;
+}
+.lock-toggle:hover{color:#374151;}
+.lock-btn{
+  width:100%;padding:13px;background:#059669;color:#FFFFFF;border:none;
+  border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:background .15s;
+}
+.lock-btn:hover{background:#047857;}
+.lock-btn:active{background:#065F46;}
+.lock-error{
+  font-size:12px;color:#DC2626;text-align:center;
+  background:#FEF2F2;border:1px solid #FCA5A5;
+  border-radius:8px;padding:8px 12px;width:100%;
+  display:none;
+}
+.lock-hint{font-size:11px;color:#9CA3AF;text-align:center;}
+</style>
+
+<div id="lockScreen">
+  <div class="lock-card">
+    <div class="lock-logo">My<em>Planner</em> <span style="color:#9CA3AF;font-weight:300;">CM</span></div>
+    <div class="lock-subtitle">Velocity Sales Management</div>
+    <div class="lock-input-wrap">
+      <input class="lock-input" type="password" id="lockInput"
+        placeholder="Enter password"
+        onkeydown="if(event.key==='Enter')checkPassword()"
+        autocomplete="current-password"/>
+      <button class="lock-toggle" onclick="toggleLockVisibility()" id="lockToggleBtn">show</button>
+    </div>
+    <div class="lock-error" id="lockError">Incorrect password. Please try again.</div>
+    <button class="lock-btn" onclick="checkPassword()">Unlock</button>
+    <div class="lock-hint">Contact Carrie Miller for access</div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+
+  <div class="topbar">
+    <div class="logo">My<em>Planner</em> <span style="color:rgba(255,255,255,.4);font-weight:300;">CM</span></div>
+    <div class="topbar-right">
+      <button class="btn-backup" onclick="exportBackup()">&#8595; Export backup</button>
+      <label for="backupFile" class="btn-backup" style="cursor:pointer;">&#8593; Import backup</label>
+      <input type="file" id="backupFile" accept=".json" style="display:none" onchange="importBackup(event)">
+      <button class="btn-add-task" onclick="openAddTask()">+ New Task</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('tasks',this)">Tasks <span class="tab-cnt" id="taskCnt">0</span></button>
+    <button class="tab" onclick="switchTab('projects',this)">Projects</button>
+    <button class="tab" onclick="switchTab('shows',this)">Shows</button>
+    <button class="tab" onclick="switchTab('info',this)">Velocity Info</button>
+  </div>
+
+  <!-- ── TASKS ── -->
+  <div class="panel active main" id="panelTasks">
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="quick-add">
+      <input id="qInput" type="text" placeholder="Quick add — type task and press Enter..." onkeydown="if(event.key==='Enter')quickAdd()"/>
+      <select id="qProj">
+        <option value="Team / Admin">Team / Admin</option>
+        <option value="KeHE Shows">KeHE Shows</option>
+        <option value="BJ's Road Shows">BJ's Road Shows</option>
+        <option value="Category Reviews">Category Reviews</option>
+        <option value="Follow-ups">Follow-ups</option>
+        <option value="Personal">Personal</option>
+      </select>
+      <select id="qPrio">
+        <option value="P3">P3 — Medium</option>
+        <option value="P1">P1 — Urgent</option>
+        <option value="P2">P2 — High</option>
+        <option value="P4">P4 — Low</option>
+      </select>
+      <button class="btn-primary" onclick="quickAdd()">Add</button>
+      <button class="btn-secondary" onclick="openAddTask()">Full details</button>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-chip" onclick="setFilter('pending',this)">Pending</button>
+      <button class="filter-chip" onclick="setFilter('inprogress',this)">In Progress</button>
+      <button class="filter-chip" onclick="setFilter('done',this)">Done</button>
+      <button class="filter-chip" onclick="setFilter('overdue',this)">Overdue</button>
+      <select class="sort-sel" onchange="setSort(this.value)">
+        <option value="added">Sort: Date added</option>
+        <option value="priority">Sort: Priority</option>
+        <option value="due">Sort: Due date</option>
+        <option value="project">Sort: Project</option>
+        <option value="status">Sort: Status</option>
+      </select>
+    </div>
+    <div id="taskList"></div>
+  </div>
+
+  <!-- ── PROJECTS ── -->
+  <div class="panel main" id="panelProjects">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:11px;color:var(--text-light);">Click any task to edit inline. Click section name to rename.</div>
+      <button class="btn-primary" onclick="openAddSection('projPanel')" style="display:flex;align-items:center;gap:6px;">&#43; Add Section</button>
+    </div>
+    <div id="projPanel"></div>
+  </div>
+
+  <!-- ── SHOWS ── -->
+  <div class="panel main" id="panelShows">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:11px;color:var(--text-light);">Click any task to edit inline. Click section name to rename.</div>
+      <button class="btn-primary" onclick="openAddSection('showsPanel')" style="display:flex;align-items:center;gap:6px;">&#43; Add Section</button>
+    </div>
+    <div id="showsPanel"></div>
+  </div>
+
+  <!-- ── VELOCITY INFO ── -->
+  <div class="panel main" id="panelInfo">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--teal-900);margin-bottom:2px;">Velocity Info</div>
+        <div style="font-size:12px;color:var(--text-light);">Passcodes, billing, UNFI logins & ESN numbers</div>
+      </div>
+      <button class="btn-primary" onclick="openAddInfo()">+ Add Entry</button>
+    </div>
+    <div id="infoPanel"></div>
+  </div>
+</div>
+
+<!-- ── TASK MODAL ── -->
+<div class="modal-backdrop" id="taskModal" style="display:none" onclick="if(event.target===this)closeTaskModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="taskModalTitle">Add task</div>
+      <button class="close-btn" onclick="closeTaskModal()">&times;</button>
+    </div>
+    <div class="form-row"><label class="form-label">Task name</label>
+      <input id="mName" type="text" placeholder="What needs to get done?"/>
+    </div>
+    <div class="form-2">
+      <div class="form-row"><label class="form-label">Project</label>
+        <select id="mProj">
+          <option>Team / Admin</option><option>KeHE Shows</option>
+          <option>BJ's Road Shows</option><option>Category Reviews</option>
+          <option>Follow-ups</option><option>Personal</option>
+        </select>
+      </div>
+      <div class="form-row"><label class="form-label">Priority</label>
+        <select id="mPrio">
+          <option value="P1">P1 — Urgent</option>
+          <option value="P2">P2 — High</option>
+          <option value="P3" selected>P3 — Medium</option>
+          <option value="P4">P4 — Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-2">
+      <div class="form-row"><label class="form-label">Due date</label>
+        <input id="mDue" type="date"/>
+      </div>
+      <div class="form-row"><label class="form-label">Status</label>
+        <select id="mStat">
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="On Hold">On Hold</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row"><label class="form-label">Notes</label>
+      <textarea id="mNotes" placeholder="Any details, context, or follow-up info..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveTask()">Save task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── INFO MODAL ── -->
+<div class="modal-backdrop" id="infoModal" style="display:none" onclick="if(event.target===this)closeInfoModal()">
+  <div class="modal" id="infoModal">
+    <div class="modal-header">
+      <div class="modal-title" id="infoModalTitle">Add entry</div>
+      <button class="close-btn" onclick="closeInfoModal()">&times;</button>
+    </div>
+    <div class="form-2">
+      <div class="form-row"><label class="form-label">Category</label>
+        <select id="iCat" onchange="toggleInfoFields()">
+          <option value="passcode">Passcode</option>
+          <option value="billing">Billing</option>
+          <option value="unfi">UNFI Insights</option>
+          <option value="esn">ESN Number</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-row"><label class="form-label">Label / Brand</label>
+        <input id="iLabel" type="text" placeholder="e.g. Office Wi-Fi"/>
+      </div>
+    </div>
+    <div id="unfiFields" style="display:none">
+      <div class="form-2" style="margin-top:0">
+        <div class="form-row"><label class="form-label">Manager</label><input id="iMgr" type="text" placeholder="e.g. Adam"/></div>
+        <div class="form-row"><label class="form-label">Username</label><input id="iUser" type="text" placeholder="e.g. InsightsNAT25668"/></div>
+      </div>
+    </div>
+    <div id="esnFields" style="display:none">
+      <div class="form-2" style="margin-top:0">
+        <div class="form-row"><label class="form-label">ESN Number</label><input id="iEsn" type="text" placeholder="e.g. 02013835"/></div>
+        <div class="form-row"><label class="form-label">Category Manager</label><input id="iCm" type="text"/></div>
+      </div>
+    </div>
+    <div id="iValRow" class="form-row"><label class="form-label" id="iValLabel">Password / Value</label>
+      <input id="iVal" type="text" placeholder="Enter value"/>
+    </div>
+    <div class="form-row"><label class="form-label">Notes</label>
+      <input id="iNotes" type="text" placeholder="Optional details"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeInfoModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveInfo()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD SECTION MODAL ── -->
+<div class="modal-backdrop" id="sectionModal" style="display:none" onclick="if(event.target===this)closeSectionModal()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <div class="modal-title" id="sectionModalTitle">Add section</div>
+      <button class="close-btn" onclick="closeSectionModal()">&times;</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Section name</label>
+      <input id="sectionName" type="text" placeholder="e.g. Sammontana, Expo East..." onkeydown="if(event.key==='Enter')saveSection()"/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Color</label>
+      <div id="colorSwatches" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeSectionModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveSection()">Add section</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NOTIFICATION ── -->
+<div class="notif" id="notifEl" style="display:none">&#10003; <span id="notifMsg"></span></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════
+const TODAY = new Date().toISOString().split('T')[0];
+
+function ds(d){return d.toISOString().split('T')[0];}
+function dOff(n){const d=new Date();d.setDate(d.getDate()+n);return ds(d);}
+
+const PROJ_COLORS = {
+  'Category Reviews': {bg:'#1D4ED8',light:'#EFF6FF'},
+  "BJ's Road Shows":  {bg:'#065F46',light:'#ECFDF5'},
+  'Team / Admin':     {bg:'#5B21B6',light:'#F5F3FF'},
+  'KeHE Shows':       {bg:'#92400E',light:'#FFFBEB'},
+  'Follow-ups':       {bg:'#0E7490',light:'#F0FDFF'},
+  'Personal':         {bg:'#BE185D',light:'#FFF1F2'},
+  'Adam Follow-Ups':  {bg:'#9D174D',light:'#FFF1F2'},
+};
+
+const SHOW_COLORS = {
+  'KeHE Shows':                      {bg:'#B45309',light:'#FFFBEB'},
+  'Sweets & Snacks — May 19–21':     {bg:'#9D4E7C',light:'#FDF2F8'},
+  'Expo West':                        {bg:'#2D7D5A',light:'#ECFDF5'},
+};
+
+function loadTasks(){
+  try{return JSON.parse(localStorage.getItem('mp_tasks'))||defaultTasks();}
+  catch{return defaultTasks();}
+}
+function saveTasks(){localStorage.setItem('mp_tasks',JSON.stringify(tasks));}
+
+function loadInfo(){
+  try{return JSON.parse(localStorage.getItem('mp_info'))||defaultInfo();}
+  catch{return defaultInfo();}
+}
+function saveInfoData(){localStorage.setItem('mp_info',JSON.stringify(infoItems));}
+
+function loadProjects(){
+  try{return JSON.parse(localStorage.getItem('mp_projects'))||defaultProjects();}
+  catch{return defaultProjects();}
+}
+function saveProjects(){localStorage.setItem('mp_projects',JSON.stringify(projects));}
+
+function loadShows(){
+  try{return JSON.parse(localStorage.getItem('mp_shows'))||defaultShows();}
+  catch{return defaultShows();}
+}
+function saveShows(){localStorage.setItem('mp_shows',JSON.stringify(shows));}
+
+function defaultTasks(){
+  return [
+    {id:'t1',name:'Manuka Inventory Report',project:'Team / Admin',priority:'P3',due:'',status:'Pending',notes:'Monthly recurring — due 1st',added:Date.now()-19e5,done:false},
+    {id:'t2',name:'KeHE Impulse & Indulgence Show — follow up / Marsalle',project:'KeHE Shows',priority:'P2',due:'',status:'Pending',notes:'',added:Date.now()-18e5,done:false},
+    {id:'t3',name:'KeHE New Item Show — follow up / Marsalle',project:'KeHE Shows',priority:'P2',due:'',status:'Pending',notes:'',added:Date.now()-17e5,done:false},
+    {id:'t4',name:'American Airlines credits — USE before expiry',project:'Personal',priority:'P2',due:dOff(67),status:'Pending',notes:'Expires in ~67 days',added:Date.now()-16e5,done:false},
+    {id:'t5',name:'Confirm if Julie is going to Sweets & Snacks show',project:'Team / Admin',priority:'P3',due:'',status:'Pending',notes:'',added:Date.now()-15e5,done:false},
+    {id:'t6',name:'Expense Report — monthly',project:'Team / Admin',priority:'P2',due:'',status:'Pending',notes:'Due 1st of every month',added:Date.now()-14e5,done:false},
+    {id:'t7',name:'Desk part for Adam — find alternative option',project:'Team / Admin',priority:'P3',due:dOff(36),status:'Pending',notes:'Not in until ~5/1 — keep looking',added:Date.now()-13e5,done:false},
+    {id:'t8',name:'Team — research options to save pics (app or shared drive)',project:'Team / Admin',priority:'P1',due:'',status:'Pending',notes:'',added:Date.now()-12e5,done:false},
+    {id:'t9',name:"BJ's Roadshow coverage — confirm all dates",project:"BJ's Road Shows",priority:'P2',due:'',status:'Pending',notes:'Jean: 3/28 full day, 3/29 3-6pm only',added:Date.now()-11e5,done:false},
+    {id:'t10',name:'Linda / GF PL Opp KeHE — meeting',project:'KeHE Shows',priority:'P2',due:'',status:'Pending',notes:'',added:Date.now()-10e5,done:false},
+    {id:'t11',name:'KeHE Show June — dinner reservations (3 separate)',project:'KeHE Shows',priority:'P2',due:'',status:'Pending',notes:'VSM Team Mon, VSM/Client Wed, KeHE event',added:Date.now()-9e5,done:false},
+    {id:'t12',name:'KeHE Show — follow up with Ari for after-show invite',project:'KeHE Shows',priority:'P3',due:dOff(67),status:'Pending',notes:'',added:Date.now()-8e5,done:false},
+    {id:'t13',name:'Nancy — KeHE sponsorships for Sammontana Gelato',project:'KeHE Shows',priority:'P2',due:'',status:'Pending',notes:'Find out what opps are available',added:Date.now()-7e5,done:false},
+    {id:'t14',name:'Expense tracker for Claude & all apps (team)',project:'Team / Admin',priority:'P3',due:'',status:'Pending',notes:'',added:Date.now()-6e5,done:false},
+    {id:'t15',name:'Intern setup — Emmet (email, SharePoint, license)',project:'Team / Admin',priority:'P1',due:'',status:'Pending',notes:'Emmet.Widtfeldt@velocitysalesmanagement.net',added:Date.now()-5e5,done:false},
+    {id:'t16',name:'Follow up on desk part for Adam',project:'Follow-ups',priority:'P3',due:'',status:'Pending',notes:'',added:Date.now()-4e5,done:false},
+    {id:'t17',name:'KeHE Show — build out budget file',project:'KeHE Shows',priority:'P2',due:dOff(67),status:'Pending',notes:'',added:Date.now()-3e5,done:false},
+    {id:'t18',name:'Sweets & Snacks — hotel confirmed, verify details',project:'Team / Admin',priority:'P3',due:'',status:'Pending',notes:'Courtyard Marriott LV #82281193 — May 19-21',added:Date.now()-2e5,done:false},
+    {id:'t19',name:'CelebExperts — reply to Milk & Patience Yogurt proposal',project:'Follow-ups',priority:'P2',due:'',status:'Pending',notes:'Danica @ CelebExperts waiting on feedback',added:Date.now()-1e5,done:false},
+  ];
+}
+
+function defaultProjects(){
+  return {
+    'Adam Follow-Ups': [{id:'pa1',name:'',notes:'',done:false},{id:'pa2',name:'',notes:'',done:false},{id:'pa3',name:'',notes:'',done:false},{id:'pa4',name:'',notes:'',done:false},{id:'pa5',name:'',notes:'',done:false},{id:'pa6',name:'',notes:'',done:false},{id:'pa7',name:'',notes:'',done:false},{id:'pa8',name:'',notes:'',done:false},{id:'pa9',name:'',notes:'',done:false},{id:'pa10',name:'',notes:'',done:false}],
+    'Category Reviews': [
+      {id:'pc1',name:'Q2 Category Review — Stop & Shop',notes:'',done:false},
+      {id:'pc2',name:'Q2 Category Review — Hannaford',notes:'',done:false},
+      {id:'pc3',name:'Send retailer presentation deck',notes:'',done:false},
+      {id:'pc4',name:'Category Review Tracker — share with team',notes:'',done:false},
+      {id:'pc5',name:'Linda / GF PL Opp KeHE — meeting',notes:'',done:false},
+      {id:'pc6',name:'',notes:'',done:false},{id:'pc7',name:'',notes:'',done:false},{id:'pc8',name:'',notes:'',done:false},{id:'pc9',name:'',notes:'',done:false},{id:'pc10',name:'',notes:'',done:false},
+    ],
+    "BJ's Road Shows": [
+      {id:'pb1',name:"BJ's Roadshow coverage — confirm all dates",notes:'Jean: 3/28 full day, 3/29 3-6pm only',done:false},
+      {id:'pb2',name:'Stoneham shift schedule',notes:'',done:false},
+      {id:'pb3',name:'Waltham coordinator check-in',notes:'',done:false},
+      {id:'pb4',name:'Weymouth road show prep',notes:'',done:false},
+      {id:'pb5',name:'Contact demo company re: morning coverage 3/29',notes:'Adam requested additional coverage',done:false},
+      {id:'pb6',name:'Organize FPF team tees',notes:'',done:false},
+      {id:'pb7',name:'',notes:'',done:false},{id:'pb8',name:'',notes:'',done:false},{id:'pb9',name:'',notes:'',done:false},{id:'pb10',name:'',notes:'',done:false},
+    ],
+    'Follow-ups': [
+      {id:'pf1',name:'CelebExperts — reply to Milk & Patience Yogurt proposal',notes:'Danica waiting on feedback',done:false},
+      {id:'pf2',name:'Social Media Manager — forward applications to Frederic',notes:'Applications to Carrie.Miller@velocitysalesmanagement.net',done:false},
+      {id:'pf3',name:'Regus Orlando — block April 16 on calendar',notes:'Meeting room 8:30am-5pm, 3505 Lake Lynda Dr',done:false},
+      {id:'pf4',name:'Book hotel April 15 — Fairfield Inn & Suites Orlando',notes:'Team arriving night of 4/15',done:false},
+      {id:'pf5',name:'Follow up on desk part for Adam',notes:'',done:false},
+      {id:'pf6',name:'American Airlines credits — USE before expiry',notes:'~67 days',done:false},
+      {id:'pf7',name:'',notes:'',done:false},{id:'pf8',name:'',notes:'',done:false},{id:'pf9',name:'',notes:'',done:false},{id:'pf10',name:'',notes:'',done:false},
+    ],
+    'Team / Admin': [
+      {id:'pt1',name:'Intern setup — Emmet (email, SharePoint, license)',notes:'Emmet.Widtfeldt@velocitysalesmanagement.net',done:false},
+      {id:'pt2',name:'Expense Report — monthly',notes:'Due 1st of every month',done:false},
+      {id:'pt3',name:'Manuka Inventory Report',notes:'Due 1st of every month',done:false},
+      {id:'pt4',name:'Expense tracker for Claude & all apps',notes:'',done:false},
+      {id:'pt5',name:'Research photo storage options',notes:'App or shared drive',done:false},
+      {id:'pt6',name:'Desk part for Adam — find alternative',notes:'Not in until ~5/1',done:false},
+      {id:'pt7',name:'',notes:'',done:false},{id:'pt8',name:'',notes:'',done:false},{id:'pt9',name:'',notes:'',done:false},{id:'pt10',name:'',notes:'',done:false},
+    ],
+    'Personal': [
+      {id:'pp1',name:'American Airlines credits — use before expiry',notes:'~67 days',done:false},
+      {id:'pp2',name:'',notes:'',done:false},{id:'pp3',name:'',notes:'',done:false},{id:'pp4',name:'',notes:'',done:false},{id:'pp5',name:'',notes:'',done:false},
+      {id:'pp6',name:'',notes:'',done:false},{id:'pp7',name:'',notes:'',done:false},{id:'pp8',name:'',notes:'',done:false},{id:'pp9',name:'',notes:'',done:false},{id:'pp10',name:'',notes:'',done:false},
+    ],
+  };
+}
+
+function defaultShows(){
+  return {
+    'KeHE Shows': [
+      {id:'sk1',name:'KeHE Impulse & Indulgence Show — follow up / Marsalle',notes:'',done:false},
+      {id:'sk2',name:'KeHE New Item Show — follow up / Marsalle',notes:'',done:false},
+      {id:'sk3',name:'KeHE Show June — dinner reservations (VSM Team Monday)',notes:'',done:false},
+      {id:'sk4',name:'KeHE Show June — dinner reservations (VSM Team/Client Wednesday)',notes:'',done:false},
+      {id:'sk5',name:'KeHE Show June — KeHE event reservation',notes:'',done:false},
+      {id:'sk6',name:'Follow up with Ari for after-show invite',notes:'Due ~5/31',done:false},
+      {id:'sk7',name:'Nancy — KeHE sponsorships for Sammontana Gelato',notes:'Find out what opps are available',done:false},
+      {id:'sk8',name:'KeHE Show — build out budget file',notes:'Due ~5/31',done:false},
+      {id:'sk9',name:'',notes:'',done:false},{id:'sk10',name:'',notes:'',done:false},
+    ],
+    'Sweets & Snacks — May 19–21': [
+      {id:'ss1',name:'Confirm Julie is attending',notes:'',done:false},
+      {id:'ss2',name:'Hotel confirmed — Courtyard Marriott LV #82281193',notes:'2 rooms booked — May 19-21',done:false},
+      {id:'ss3',name:'Travel arrangements',notes:'',done:false},
+      {id:'ss4',name:'Prep materials / booth needs',notes:'',done:false},
+      {id:'ss5',name:'',notes:'',done:false},{id:'ss6',name:'',notes:'',done:false},{id:'ss7',name:'',notes:'',done:false},{id:'ss8',name:'',notes:'',done:false},{id:'ss9',name:'',notes:'',done:false},{id:'ss10',name:'',notes:'',done:false},
+    ],
+    'Expo West': [
+      {id:'se1',name:'',notes:'',done:false},{id:'se2',name:'',notes:'',done:false},{id:'se3',name:'',notes:'',done:false},{id:'se4',name:'',notes:'',done:false},{id:'se5',name:'',notes:'',done:false},
+      {id:'se6',name:'',notes:'',done:false},{id:'se7',name:'',notes:'',done:false},{id:'se8',name:'',notes:'',done:false},{id:'se9',name:'',notes:'',done:false},{id:'se10',name:'',notes:'',done:false},
+    ],
+  };
+}
+
+function defaultInfo(){
+  return [
+    {id:'u1',cat:'unfi',label:'Barney Butter',manager:'Adam',username:'InsightsNAT25668',val:'',notes:'',revealed:false},
+    {id:'u2',cat:'unfi',label:"Moore's",manager:'Bob',username:'Insights5107776',val:'',notes:'',revealed:false},
+    {id:'u3',cat:'unfi',label:'Wickles',manager:'Bob',username:'InsightsNAT58833',val:'',notes:'',revealed:false},
+    {id:'u4',cat:'unfi',label:'Manuka Health',manager:'Denise',username:'InsightsNAT51574',val:'',notes:'',revealed:false},
+    {id:'u5',cat:'unfi',label:'Fresh Press Farms',manager:'Denise',username:'InsightsNAT57697',val:'',notes:'',revealed:false},
+    {id:'u6',cat:'unfi',label:'Cerebelly',manager:'John',username:'insightsnat55043',val:'',notes:'',revealed:false},
+    {id:'u7',cat:'unfi',label:'Premier',manager:'John',username:'InsightsNAT33283',val:'',notes:'',revealed:false},
+    {id:'u8',cat:'unfi',label:'Solula',manager:'John',username:'',val:'',notes:'Credentials pending',revealed:false},
+    {id:'e0',cat:'esn',esn:'03000807',label:'Velocity Sales',cm:'',notes:'Master account',revealed:false},
+    {id:'e1',cat:'esn',esn:'02013835',label:'BARNEY & CO CALIFORNIA LLC',cm:'Jake Morgan',notes:'',revealed:false},
+    {id:'e2',cat:'esn',esn:'02230188',label:'BINDI NORTH AMERICA INC',cm:'Alvaro Reyes',notes:'',revealed:false},
+    {id:'e3',cat:'esn',esn:'02005107',label:'C & M FOOD DISTRIBUTING INC',cm:'Chris Lorentz',notes:'',revealed:false},
+    {id:'e4',cat:'esn',esn:'02021086',label:'CEREBELLY INC',cm:'Elizabeth Frandle',notes:'',revealed:false},
+    {id:'e5',cat:'esn',esn:'02240570',label:'FB WICKLES LLC',cm:'Chris Lorentz',notes:'',revealed:false},
+    {id:'e6',cat:'esn',esn:'02250099',label:'GRIN NATURAL PRODUCTS LIMITED',cm:'Elizabeth Frandle',notes:'',revealed:false},
+    {id:'e7',cat:'esn',esn:'02017573',label:'MANUKA HEALTH NEW ZEALAND LTD',cm:'Christine Casey',notes:'',revealed:false},
+    {id:'e8',cat:'esn',esn:'02250610',label:'MARSALLE INC',cm:'Jack Tischler',notes:'',revealed:false},
+    {id:'e9',cat:'esn',esn:'02013597',label:'PREMIER FOODS INC',cm:'Morgan Lee',notes:'',revealed:false},
+    {id:'e10',cat:'esn',esn:'02220404',label:'REDLANDS FARM HOLDING INC',cm:'Lynda Glass',notes:'',revealed:false},
+    {id:'e11',cat:'esn',esn:'02221057',label:'WORLD WIDE SNACKS LLC',cm:'Tyler Averett',notes:'',revealed:false},
+  ];
+}
+
+let tasks    = loadTasks();
+let infoItems= loadInfo();
+let projects = loadProjects();
+let shows    = loadShows();
+let currentFilter='all', currentSort='added', editTaskId=null, editInfoId=null, notifTimer=null;
+
+// ════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtDate(s){if(!s)return '';return new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function dueClass(due){
+  if(!due)return '';
+  if(due<TODAY)return 'overdue';
+  if(due===TODAY)return 'today';
+  return '';
+}
+function dueLabel(due){
+  if(!due)return '';
+  const dc=dueClass(due);
+  if(dc==='overdue')return `<span class="tag tag-due overdue">Overdue ${fmtDate(due)}</span>`;
+  if(dc==='today')return `<span class="tag tag-due today">Due today</span>`;
+  return `<span class="tag tag-due">${fmtDate(due)}</span>`;
+}
+function prioTag(p){
+  const map={P1:'P1 Urgent',P2:'P2 High',P3:'P3 Medium',P4:'P4 Low'};
+  const cls={P1:'tag-p1',P2:'tag-p2',P3:'tag-p3',P4:'tag-p4'};
+  return `<span class="tag ${cls[p]||'tag-p4'}">${map[p]||p}</span>`;
+}
+function statusTag(s){
+  const cls={Pending:'pending','In Progress':'inprogress',Done:'done','On Hold':'onhold'};
+  return `<span class="tag-status ${cls[s]||'pending'}">${s}</span>`;
+}
+function showNotif(msg){
+  document.getElementById('notifMsg').textContent=msg;
+  const el=document.getElementById('notifEl');el.style.display='flex';
+  if(notifTimer)clearTimeout(notifTimer);
+  notifTimer=setTimeout(()=>{el.style.display='none';},2800);
+}
+
+// ════════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════════
+function switchTab(tab,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+  btn.classList.add('active');
+  if(tab==='projects')renderProjects();
+  if(tab==='shows')renderShows();
+  if(tab==='info')renderInfo();
+}
+
+// ════════════════════════════════════════════════════════
+// TASKS
+// ════════════════════════════════════════════════════════
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderTasks();
+}
+function setSort(v){currentSort=v;renderTasks();}
+
+function getFiltered(){
+  let list=[...tasks];
+  if(currentFilter==='pending')   list=list.filter(t=>t.status==='Pending'&&!t.done);
+  if(currentFilter==='inprogress')list=list.filter(t=>t.status==='In Progress');
+  if(currentFilter==='done')      list=list.filter(t=>t.done||t.status==='Done');
+  if(currentFilter==='overdue')   list=list.filter(t=>!t.done&&t.due&&t.due<TODAY);
+  if(currentSort==='priority'){
+    const o={P1:1,P2:2,P3:3,P4:4};
+    list.sort((a,b)=>(o[a.priority]||9)-(o[b.priority]||9));
+  } else if(currentSort==='due'){
+    list.sort((a,b)=>{if(!a.due)return 1;if(!b.due)return -1;return a.due.localeCompare(b.due);});
+  } else if(currentSort==='project'){
+    list.sort((a,b)=>a.project.localeCompare(b.project));
+  } else if(currentSort==='status'){
+    list.sort((a,b)=>a.status.localeCompare(b.status));
+  } else {
+    list.sort((a,b)=>b.added-a.added);
+  }
+  return list;
+}
+
+function renderTasks(){
+  const list=getFiltered();
+  const pending=tasks.filter(t=>!t.done&&t.status!=='Done').length;
+  const done=tasks.filter(t=>t.done||t.status==='Done').length;
+  const overdue=tasks.filter(t=>!t.done&&t.due&&t.due<TODAY).length;
+  const urgent=tasks.filter(t=>!t.done&&t.priority==='P1').length;
+
+  document.getElementById('taskCnt').textContent=pending;
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat"><strong>${tasks.length}</strong><span class="stat-label">Total</span></div>
+    <div class="stat"><strong>${pending}</strong><span class="stat-label">Pending</span></div>
+    <div class="stat"><strong>${done}</strong><span class="stat-label">Done</span></div>
+    ${overdue?`<div class="stat urgent"><strong>${overdue}</strong><span class="stat-label">Overdue</span></div>`:''}
+    ${urgent?`<div class="stat urgent"><strong>${urgent}</strong><span class="stat-label">Urgent</span></div>`:''}
+  `;
+
+  if(!list.length){
+    document.getElementById('taskList').innerHTML=`<div class="empty-state"><div class="empty-icon">✅</div>No tasks here — all caught up!</div>`;
+    return;
+  }
+
+  document.getElementById('taskList').innerHTML=list.map(t=>`
+    <div class="task-block${t.done||t.status==='Done'?' done':''}" id="tb-${t.id}">
+      <div class="task-row">
+        <div class="task-check${t.done?' checked':''}" onclick="toggleTask('${t.id}')"></div>
+        <div class="task-body" onclick="openEditTask('${t.id}')" style="cursor:pointer">
+          <div class="task-name">${esc(t.name)}</div>
+          <div class="task-tags">
+            ${prioTag(t.priority)}
+            <span class="tag tag-proj">${esc(t.project)}</span>
+            ${dueLabel(t.due)}
+            ${statusTag(t.status)}
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="icon-btn" onclick="openEditTask('${t.id}')" title="Edit">&#9998;</button>
+          <button class="icon-btn del" onclick="deleteTask('${t.id}')" title="Delete">&#215;</button>
+        </div>
+      </div>
+      ${t.notes?`<div class="notes-row"><span class="notes-prefix">&#8627;</span>${esc(t.notes)}</div>`:''}
+    </div>
+  `).join('');
+}
+
+function toggleTask(id){
+  const t=tasks.find(x=>x.id===id);
+  if(!t)return;
+  t.done=!t.done;
+  if(t.done)t.status='Done';
+  else t.status='Pending';
+  saveTasks();renderTasks();
+}
+
+function deleteTask(id){
+  tasks=tasks.filter(x=>x.id!==id);
+  saveTasks();renderTasks();showNotif('Task deleted');
+}
+
+function quickAdd(){
+  const inp=document.getElementById('qInput');
+  const name=inp.value.trim();
+  if(!name)return;
+  tasks.unshift({
+    id:'t'+Date.now(),name,
+    project:document.getElementById('qProj').value,
+    priority:document.getElementById('qPrio').value,
+    due:'',status:'Pending',notes:'',added:Date.now(),done:false
+  });
+  inp.value='';
+  saveTasks();renderTasks();showNotif('Task added!');
+}
+
+function openAddTask(){
+  editTaskId=null;
+  document.getElementById('taskModalTitle').textContent='Add task';
+  document.getElementById('mName').value='';
+  document.getElementById('mDue').value='';
+  document.getElementById('mPrio').value='P3';
+  document.getElementById('mStat').value='Pending';
+  document.getElementById('mNotes').value='';
+  document.getElementById('mProj').value='Team / Admin';
+  document.getElementById('taskModal').style.display='flex';
+  setTimeout(()=>document.getElementById('mName').focus(),50);
+}
+
+function openEditTask(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  editTaskId=id;
+  document.getElementById('taskModalTitle').textContent='Edit task';
+  document.getElementById('mName').value=t.name;
+  document.getElementById('mDue').value=t.due||'';
+  document.getElementById('mPrio').value=t.priority;
+  document.getElementById('mStat').value=t.status;
+  document.getElementById('mNotes').value=t.notes||'';
+  document.getElementById('mProj').value=t.project;
+  document.getElementById('taskModal').style.display='flex';
+}
+
+function closeTaskModal(){document.getElementById('taskModal').style.display='none';}
+
+function saveTask(){
+  const name=document.getElementById('mName').value.trim();
+  if(!name){document.getElementById('mName').focus();return;}
+  const existing=editTaskId?tasks.find(t=>t.id===editTaskId):null;
+  const task={
+    id:editTaskId||'t'+Date.now(),
+    name,project:document.getElementById('mProj').value,
+    priority:document.getElementById('mPrio').value,
+    due:document.getElementById('mDue').value,
+    status:document.getElementById('mStat').value,
+    notes:document.getElementById('mNotes').value,
+    done:existing?existing.done:false,
+    added:existing?existing.added:Date.now(),
+  };
+  if(task.status==='Done')task.done=true;
+  if(editTaskId)tasks=tasks.map(t=>t.id===editTaskId?task:t);
+  else tasks.unshift(task);
+  closeTaskModal();saveTasks();renderTasks();
+  showNotif(editTaskId?'Task updated!':'Task added!');
+}
+
+// ════════════════════════════════════════════════════════
+// PROJECTS & SHOWS (shared renderer)
+// ════════════════════════════════════════════════════════
+// Section color palette
+const SECTION_PALETTE = [
+  {label:'Forest',    bg:'#065F46', light:'#ECFDF5'},
+  {label:'Teal',      bg:'#0E7490', light:'#F0FDFF'},
+  {label:'Navy',      bg:'#1E3A5F', light:'#EFF6FF'},
+  {label:'Blue',      bg:'#1D4ED8', light:'#EFF6FF'},
+  {label:'Purple',    bg:'#5B21B6', light:'#F5F3FF'},
+  {label:'Rose',      bg:'#9D174D', light:'#FFF1F2'},
+  {label:'Red',       bg:'#991B1B', light:'#FEF2F2'},
+  {label:'Amber',     bg:'#92400E', light:'#FFFBEB'},
+  {label:'Slate',     bg:'#334155', light:'#F8FAFC'},
+  {label:'Gray',      bg:'#374151', light:'#F9FAFB'},
+];
+
+// Dynamic color maps that include user-added sections
+function getColorMap(container){
+  const base = container==='projPanel' ? {...PROJ_COLORS} : {...SHOW_COLORS};
+  const data  = container==='projPanel' ? projects : shows;
+  Object.keys(data).forEach(s=>{
+    if(!base[s]) base[s] = {bg:'#374151',light:'#F9FAFB'};
+  });
+  return base;
+}
+
+function renderSections(container, data, colorMapIgnored, saveFunc){
+  const el=document.getElementById(container);
+  const colorMap=getColorMap(container);
+  el.innerHTML=Object.entries(data).map(([section,rows])=>{
+    const colors=colorMap[section]||{bg:'#374151',light:'#F9FAFB'};
+    const done=rows.filter(r=>r.done&&r.name).length;
+    const total=rows.filter(r=>r.name).length;
+    const pct=total?Math.round(done/total*100):0;
+    const sKey=section.replace(/'/g,"\\'");
+    return `
+    <div class="proj-section">
+      <div class="proj-header" style="background:${colors.bg}">
+        <div class="proj-header-left" style="flex:1;min-width:0;">
+          <div class="proj-title" contenteditable="true"
+            onblur="renameSection('${container}','${sKey}',this.textContent)"
+            title="Click to rename"
+            style="outline:none;cursor:text;border-bottom:1px dashed rgba(255,255,255,.3);"
+          >${esc(section)}</div>
+          <div class="proj-count" style="margin-left:10px;">${done}/${total} done</div>
+        </div>
+        <div class="proj-progress" style="flex:0 0 60px;margin:0 10px;">
+          <div class="proj-progress-fill" style="width:${pct}%"></div>
+        </div>
+        <button onclick="deleteSection('${container}','${sKey}')"
+          style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+          color:white;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;
+          white-space:nowrap;flex-shrink:0;" title="Delete this section">&#128465; Delete</button>
+      </div>
+      <div class="proj-body">
+        ${rows.map((item,idx)=>`
+          <div class="proj-task-row">
+            <div class="proj-task-check${item.done?' checked':''}" onclick="toggleProjTask('${container}','${sKey}',${idx})"></div>
+            <div class="proj-task-body">
+              <div class="proj-task-name${item.done?' done':''}"
+                contenteditable="true"
+                onblur="saveProjTask('${container}','${sKey}',${idx},'name',this.textContent)"
+                style="outline:none;min-width:40px;"
+              >${esc(item.name)||'<span style="color:#9CA3AF;font-style:italic;font-weight:400">Click to add task...</span>'}</div>
+              <div class="proj-task-notes" contenteditable="true"
+                onblur="saveProjTask('${container}','${sKey}',${idx},'notes',this.textContent)"
+                style="outline:none;min-width:20px;"
+                placeholder="notes..."
+              >${esc(item.notes)||''}</div>
+            </div>
+            <div class="proj-task-actions">
+              <button class="icon-btn del" onclick="deleteProjTask('${container}','${sKey}',${idx})" title="Delete task">&#215;</button>
+            </div>
+          </div>
+        `).join('')}
+        <div class="proj-add-row">
+          <div class="proj-add-input">
+            <input type="text" placeholder="+ Add task..." id="padd-${container}-${section.replace(/[\s']/g,'_')}"
+              onkeydown="if(event.key==='Enter')addProjTask('${container}','${sKey}')"/>
+            <button class="proj-add-btn" onclick="addProjTask('${container}','${sKey}')">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderProjects(){renderSections('projPanel',projects,PROJ_COLORS,saveProjects);}
+function renderShows(){renderSections('showsPanel',shows,SHOW_COLORS,saveShows);}
+
+// ── ADD / DELETE / RENAME SECTIONS ──────────────────────────────────────────
+let activeSectionContainer = null;
+let selectedSectionColor   = SECTION_PALETTE[0];
+
+function openAddSection(container){
+  activeSectionContainer = container;
+  document.getElementById('sectionModalTitle').textContent =
+    container==='projPanel' ? 'Add project section' : 'Add show section';
+  document.getElementById('sectionName').value='';
+  selectedSectionColor = SECTION_PALETTE[0];
+  // Render swatches
+  const sw=document.getElementById('colorSwatches');
+  sw.innerHTML=SECTION_PALETTE.map((c,i)=>`
+    <div onclick="selectSectionColor(${i})" id="swatch-${i}"
+      style="width:28px;height:28px;border-radius:6px;background:${c.bg};cursor:pointer;
+      border:3px solid ${i===0?'#fff':'transparent'};box-shadow:${i===0?'0 0 0 2px #059669':'none'};
+      transition:all .15s;" title="${c.label}"></div>
+  `).join('');
+  document.getElementById('sectionModal').style.display='flex';
+  setTimeout(()=>document.getElementById('sectionName').focus(),50);
+}
+
+function selectSectionColor(idx){
+  selectedSectionColor=SECTION_PALETTE[idx];
+  document.querySelectorAll('[id^="swatch-"]').forEach((el,i)=>{
+    el.style.border=`3px solid ${i===idx?'#fff':'transparent'}`;
+    el.style.boxShadow=i===idx?'0 0 0 2px #059669':'none';
+  });
+}
+
+function closeSectionModal(){
+  document.getElementById('sectionModal').style.display='none';
+  activeSectionContainer=null;
+}
+
+function saveSection(){
+  const name=document.getElementById('sectionName').value.trim();
+  if(!name){document.getElementById('sectionName').focus();return;}
+  const container=activeSectionContainer;
+  const data=container==='projPanel'?projects:shows;
+  if(data[name]){showNotif('A section with that name already exists');return;}
+  // Store color in a custom color map persisted in localStorage
+  const cmKey=container==='projPanel'?'mp_proj_colors':'mp_show_colors';
+  const stored=JSON.parse(localStorage.getItem(cmKey)||'{}');
+  stored[name]=selectedSectionColor;
+  localStorage.setItem(cmKey,JSON.stringify(stored));
+  // Add 5 blank rows
+  data[name]=[{id:'p'+Date.now(),name:'',notes:'',done:false},
+              {id:'p'+(Date.now()+1),name:'',notes:'',done:false},
+              {id:'p'+(Date.now()+2),name:'',notes:'',done:false},
+              {id:'p'+(Date.now()+3),name:'',notes:'',done:false},
+              {id:'p'+(Date.now()+4),name:'',notes:'',done:false}];
+  container==='projPanel'?saveProjects():saveShows();
+  closeSectionModal();
+  container==='projPanel'?renderProjects():renderShows();
+  showNotif(`"${name}" section added!`);
+}
+
+function deleteSection(container,section){
+  if(!confirm(`Delete the "${section}" section and all its tasks? This cannot be undone.`))return;
+  const data=container==='projPanel'?projects:shows;
+  delete data[section];
+  // Remove from custom color map too
+  const cmKey=container==='projPanel'?'mp_proj_colors':'mp_show_colors';
+  const stored=JSON.parse(localStorage.getItem(cmKey)||'{}');
+  delete stored[section];
+  localStorage.setItem(cmKey,JSON.stringify(stored));
+  container==='projPanel'?saveProjects():saveShows();
+  container==='projPanel'?renderProjects():renderShows();
+  showNotif(`"${section}" deleted`);
+}
+
+function renameSection(container,oldName,newName){
+  newName=newName.trim();
+  if(!newName||newName===oldName)return;
+  const data=container==='projPanel'?projects:shows;
+  if(!data[oldName])return;
+  // Rebuild object preserving order
+  const rebuilt={};
+  Object.entries(data).forEach(([k,v])=>{rebuilt[k===oldName?newName:k]=v;});
+  if(container==='projPanel'){projects=rebuilt;saveProjects();renderProjects();}
+  else{shows=rebuilt;saveShows();renderShows();}
+  // Update color map
+  const cmKey=container==='projPanel'?'mp_proj_colors':'mp_show_colors';
+  const stored=JSON.parse(localStorage.getItem(cmKey)||'{}');
+  if(stored[oldName]){stored[newName]=stored[oldName];delete stored[oldName];}
+  localStorage.setItem(cmKey,JSON.stringify(stored));
+  showNotif(`Renamed to "${newName}"`);
+}
+
+// Patch getColorMap to include user-saved colors
+const _origGetColorMap=getColorMap;
+function getColorMap(container){
+  const base=container==='projPanel'?{...PROJ_COLORS}:{...SHOW_COLORS};
+  const cmKey=container==='projPanel'?'mp_proj_colors':'mp_show_colors';
+  const stored=JSON.parse(localStorage.getItem(cmKey)||'{}');
+  Object.entries(stored).forEach(([k,v])=>{base[k]=v;});
+  const data=container==='projPanel'?projects:shows;
+  Object.keys(data).forEach(s=>{if(!base[s])base[s]={bg:'#374151',light:'#F9FAFB'};});
+  return base;
+}
+
+function toggleProjTask(container,section,idx){
+  const data=container==='projPanel'?projects:shows;
+  data[section][idx].done=!data[section][idx].done;
+  container==='projPanel'?saveProjects():saveShows();
+  container==='projPanel'?renderProjects():renderShows();
+}
+
+function saveProjTask(container,section,idx,field,val){
+  const data=container==='projPanel'?projects:shows;
+  if(data[section]&&data[section][idx]){
+    data[section][idx][field]=val.trim();
+    container==='projPanel'?saveProjects():saveShows();
+  }
+}
+
+function deleteProjTask(container,section,idx){
+  const data=container==='projPanel'?projects:shows;
+  data[section].splice(idx,1);
+  container==='projPanel'?saveProjects():saveShows();
+  container==='projPanel'?renderProjects():renderShows();
+}
+
+function addProjTask(container,section){
+  const key=`padd-${container}-${section.replace(/[\s']/g,'_')}`;
+  const inp=document.getElementById(key);
+  const name=inp?inp.value.trim():'';
+  if(!name)return;
+  const data=container==='projPanel'?projects:shows;
+  if(data[section])data[section].push({id:'p'+Date.now(),name,notes:'',done:false});
+  inp.value='';
+  container==='projPanel'?saveProjects():saveShows();
+  container==='projPanel'?renderProjects():renderShows();
+  showNotif('Task added!');
+}
+
+// ════════════════════════════════════════════════════════
+// VELOCITY INFO
+// ════════════════════════════════════════════════════════
+function renderInfo(){
+  const el=document.getElementById('infoPanel');
+  const passcodes=infoItems.filter(i=>i.cat==='passcode');
+  const billing=infoItems.filter(i=>i.cat==='billing');
+  const unfi=infoItems.filter(i=>i.cat==='unfi');
+  const esns=infoItems.filter(i=>i.cat==='esn');
+  const other=infoItems.filter(i=>i.cat==='other');
+  const master=esns.find(i=>i.esn==='03000807');
+  const brandEsns=esns.filter(i=>i.esn!=='03000807');
+
+  el.innerHTML=`
+  ${section('🔑 Passcodes','passcode',passcodes)}
+  ${section('💳 Billing Accounts','billing',billing)}
+  <div class="info-section">
+    <div class="info-section-title">
+      <span>🌿 UNFI Insights Logins — insights.unfi.com</span>
+      <button class="proj-add-btn" onclick="openAddInfoCat('unfi')">+ Add</button>
+    </div>
+    <div style="border:1px solid #A7D9CC;border-radius:var(--rl);overflow:hidden;background:#FFFFFF;">
+      <table class="unfi-table">
+        <thead><tr style="background:#C8EDE5;">
+          <th style="color:#064E3B;">Brand</th>
+          <th style="color:#064E3B;">Manager</th>
+          <th style="color:#064E3B;">Username</th>
+          <th style="color:#064E3B;">Password</th>
+          <th></th>
+        </tr></thead>
+        <tbody>${unfi.map((item,i)=>`
+          <tr style="background:${i%2===0?'#FFFFFF':'#F0FAF6'}">
+            <td style="font-weight:600;color:#1F2937;">${esc(item.label)}</td>
+            <td>${item.manager?`<span class="unfi-mgr">${esc(item.manager)}</span>`:''}</td>
+            <td style="font-family:'Courier New',monospace;color:#374151;">${item.username||'<span class="unfi-pending">pending</span>'}</td>
+            <td><span id="uval-${item.id}" style="color:#374151;">${item.revealed?esc(item.val):(item.val?item.val.replace(/./g,'•'):'<span class="unfi-pending">pending</span>')}</span>
+              ${item.val?`<button class="reveal-btn" onclick="toggleReveal('${item.id}')" style="margin-left:6px">${item.revealed?'hide':'show'}</button>`:''}
+            </td>
+            <td><button class="icon-btn del" onclick="deleteInfo('${item.id}')">&#215;</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="info-section">
+    <div class="info-section-title">
+      <span>🔢 ESN Numbers — UNFI Entity Supplier Numbers</span>
+      <button class="proj-add-btn" onclick="openAddInfoCat('esn')">+ Add</button>
+    </div>
+    ${master?`<div class="esn-master"><div class="esn-master-label">⭐ Velocity Sales — Master Account</div><div class="esn-num">ESN ${master.esn}</div></div>`:''}
+    <div style="border:1px solid #FDE68A;border-radius:var(--rl);overflow:hidden;background:#FFFFFF;">
+      <table class="esn-table">
+        <thead><tr style="background:#FEF3C7;">
+          <th style="color:#78350F;">ESN</th>
+          <th style="color:#78350F;">Company</th>
+          <th style="color:#78350F;">Category Manager</th>
+        </tr></thead>
+        <tbody>${brandEsns.map((item,i)=>`
+          <tr style="background:${i%2===0?'#FFFFFF':'#FFFBEB'}">
+            <td class="esn-code">${esc(item.esn)}</td>
+            <td style="font-weight:500;color:#1F2937;">${esc(item.label)}</td>
+            <td>${item.cm?`<span class="esn-cm">${esc(item.cm)}</span>`:''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  ${other.length?section('📌 Other','other',other):''}
+  `;
+}
+
+function section(title,cat,items){
+  return `<div class="info-section">
+    <div class="info-section-title">
+      <span>${title}</span>
+      <button class="proj-add-btn" onclick="openAddInfoCat('${cat}')">+ Add</button>
+    </div>
+    <div class="info-grid">
+      ${items.map(item=>`
+        <div class="info-card">
+          <div class="info-card-actions">
+            <button class="icon-btn" onclick="openEditInfo('${item.id}')">&#9998;</button>
+            <button class="icon-btn del" onclick="deleteInfo('${item.id}')">&#215;</button>
+          </div>
+          <div class="info-card-label">${item.cat}</div>
+          <div class="info-card-name">${esc(item.label)}</div>
+          <div class="info-card-val">
+            <span id="ival-${item.id}" style="${item.revealed?'':'letter-spacing:2px'}">${item.revealed?esc(item.val):item.val.replace(/./g,'•')}</span>
+            <button class="reveal-btn" onclick="toggleReveal('${item.id}')">${item.revealed?'hide':'show'}</button>
+          </div>
+          ${item.notes?`<div class="info-card-note">${esc(item.notes)}</div>`:''}
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function toggleReveal(id){
+  const item=infoItems.find(i=>i.id===id);
+  if(item){item.revealed=!item.revealed;saveInfoData();renderInfo();}
+}
+
+function toggleInfoFields(){
+  const cat=document.getElementById('iCat').value;
+  document.getElementById('unfiFields').style.display=cat==='unfi'?'block':'none';
+  document.getElementById('esnFields').style.display=cat==='esn'?'block':'none';
+  document.getElementById('iValRow').style.display=cat==='esn'?'none':'block';
+  document.getElementById('iValLabel').textContent=cat==='unfi'?'Password':'Value / Code / Account #';
+}
+
+function openAddInfo(cat){
+  editInfoId=null;
+  document.getElementById('infoModalTitle').textContent='Add entry';
+  document.getElementById('iCat').value=cat||'passcode';
+  document.getElementById('iLabel').value='';
+  document.getElementById('iVal').value='';
+  document.getElementById('iNotes').value='';
+  document.getElementById('iMgr').value='';
+  document.getElementById('iUser').value='';
+  document.getElementById('iEsn').value='';
+  document.getElementById('iCm').value='';
+  toggleInfoFields();
+  document.getElementById('infoModal').style.display='flex';
+}
+function openAddInfoCat(cat){openAddInfo(cat);}
+
+function openEditInfo(id){
+  const item=infoItems.find(i=>i.id===id);if(!item)return;
+  editInfoId=id;
+  document.getElementById('infoModalTitle').textContent='Edit entry';
+  document.getElementById('iCat').value=item.cat;
+  document.getElementById('iLabel').value=item.label;
+  document.getElementById('iVal').value=item.val||'';
+  document.getElementById('iNotes').value=item.notes||'';
+  document.getElementById('iMgr').value=item.manager||'';
+  document.getElementById('iUser').value=item.username||'';
+  document.getElementById('iEsn').value=item.esn||'';
+  document.getElementById('iCm').value=item.cm||'';
+  toggleInfoFields();
+  document.getElementById('infoModal').style.display='flex';
+}
+function closeInfoModal(){document.getElementById('infoModal').style.display='none';editInfoId=null;}
+
+function saveInfo(){
+  const label=document.getElementById('iLabel').value.trim();
+  if(!label){showNotif('Please enter a label');return;}
+  const cat=document.getElementById('iCat').value;
+  const entry={
+    id:editInfoId||'i'+Date.now(),
+    cat,label,
+    val:document.getElementById('iVal').value.trim(),
+    notes:document.getElementById('iNotes').value.trim(),
+    manager:document.getElementById('iMgr').value.trim(),
+    username:document.getElementById('iUser').value.trim(),
+    esn:document.getElementById('iEsn').value.trim(),
+    cm:document.getElementById('iCm').value.trim(),
+    revealed:false,
+  };
+  if(editInfoId)infoItems=infoItems.map(i=>i.id===editInfoId?entry:i);
+  else infoItems.push(entry);
+  closeInfoModal();saveInfoData();renderInfo();
+  showNotif(editInfoId?'Entry updated!':'Entry added!');
+}
+
+function deleteInfo(id){
+  infoItems=infoItems.filter(i=>i.id!==id);
+  saveInfoData();renderInfo();showNotif('Entry deleted');
+}
+
+// ════════════════════════════════════════════════════════
+// BACKUP
+// ════════════════════════════════════════════════════════
+function exportBackup(){
+  const data={version:2,date:new Date().toISOString(),tasks,infoItems,projects,shows};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download=`MyPlanner_CM_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();showNotif('Backup saved!');
+}
+
+function importBackup(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(!d.tasks)throw new Error('Invalid');
+      if(!confirm(`Restore backup from ${d.date?new Date(d.date).toLocaleDateString():'unknown date'}? This replaces all current data.`))return;
+      tasks=d.tasks||[];
+      infoItems=d.infoItems||[];
+      projects=d.projects||defaultProjects();
+      shows=d.shows||defaultShows();
+      saveTasks();saveInfoData();saveProjects();saveShows();
+      renderTasks();showNotif('Backup restored!');
+    }catch{alert('Could not read backup file. Please use a MyPlanner CM backup (.json) file.');}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ════════════════════════════════════════════════════════
+// LOCK SCREEN
+// ════════════════════════════════════════════════════════
+// Password is stored as a simple hash — change 'Velocity2025!' to your preferred password
+const PASS = 'Velocity2025!';
+
+function checkPassword(){
+  const val = document.getElementById('lockInput').value;
+  const err = document.getElementById('lockError');
+  if(val === PASS){
+    sessionStorage.setItem('mp_unlocked','1');
+    document.getElementById('lockScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    err.style.display='none';
+    renderTasks();
+  } else {
+    err.style.display='block';
+    document.getElementById('lockInput').value='';
+    document.getElementById('lockInput').focus();
+    // Shake animation
+    const card=document.querySelector('.lock-card');
+    card.style.animation='shake .4s ease';
+    setTimeout(()=>{card.style.animation='';},400);
+  }
+}
+
+function toggleLockVisibility(){
+  const inp=document.getElementById('lockInput');
+  const btn=document.getElementById('lockToggleBtn');
+  if(inp.type==='password'){inp.type='text';btn.textContent='hide';}
+  else{inp.type='password';btn.textContent='show';}
+}
+
+// Auto-unlock if already authenticated this session
+if(sessionStorage.getItem('mp_unlocked')==='1'){
+  document.getElementById('lockScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  renderTasks();
+} else {
+  setTimeout(()=>document.getElementById('lockInput').focus(),100);
+}
+</script>
+</body>
+</html>
